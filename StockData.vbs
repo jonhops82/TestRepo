@@ -1,0 +1,207 @@
+Attribute VB_Name = "Module1"
+Sub TSV_Hard()
+
+
+    ' --------------------------------------------
+    ' LOOP THROUGH ALL SHEETS
+    ' --------------------------------------------
+    For Each ws In Worksheets
+
+        ' Created a Variable to Hold Sheet Name
+        Dim WorksheetName As String
+
+        ' Grab the WorksheetName
+        WorksheetName = ws.Name
+      
+        ' Add headers to summary section
+        ws.Range("I1").Value = "Ticker Symbol"
+        ws.Range("J1").Value = "Yearly Change"
+        ws.Range("K1").Value = "Percent Change"
+        ws.Range("L1").Value = "Total Stock Volume"
+            
+        ' Set an initial variable for holding the ticket symbol
+        Dim Ticker_Symbol As String
+
+        ' Set an initial variable for holding the total per ticker symbol
+        Dim Total_Volume As Double
+        Total_Volume = 0
+
+        ' Keep track of the location for each ticker symbol in the summary table
+        Dim Summary_Table_Row As Integer
+        Summary_Table_Row = 2
+           
+        ' define last row
+        LastRow = ws.Cells(Rows.Count, "A").End(xlUp).Row
+        
+        ' Create Variables for BOY and EOY stock values
+        Dim BOY_Open As Double
+        Dim EOY_Close As Double
+        
+        ' Create Variables for Yearly Change and Percent Change
+        Dim Yearly_Change As Double
+        Dim Percent_Change As Double
+        
+        ' Create Variables to Hold Greatest Increase%, Decrease% and Total Volume
+        Dim Percent_Increase_Ticker As String
+        Dim Percent_Increase_Greatest As Double
+        Dim Percent_Decrease_Ticker As String
+        Dim Percent_Decrease_Greatest As Double
+        Dim Volume_Ticker As String
+        Dim Volume_Greatest As Double
+                              
+                              
+    ' --------------------------------------------
+    ' FIRST LOOP
+    ' --------------------------------------------
+        ' Loop through all stock purchases
+        For i = 2 To LastRow
+
+            ' Check if we are still within the same ticker symbol, if it is not...
+            If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+
+                ' Set the Brand name
+                Ticker_Symbol = ws.Cells(i, 1).Value
+
+                ' Add to the Total Volume
+                Total_Volume = Total_Volume + ws.Cells(i, 7).Value
+
+                ' Print the ticker symbol in the Summary Table
+                ws.Range("I" & Summary_Table_Row).Value = Ticker_Symbol
+
+                ' Print the Brand Amount to the Summary Table
+                ws.Range("L" & Summary_Table_Row).Value = Total_Volume
+                
+                ' Establish EOY_Close price
+                EOY_Close = ws.Cells(i, 6).Value
+                
+                ' Calculate & Print Yearly Change
+                Yearly_Change = EOY_Close - BOY_Open
+                ws.Range("J" & Summary_Table_Row).Value = Yearly_Change
+                
+                ' Format Cell Color based on Value
+                If Yearly_Change > 0 Then
+                    ws.Range("J" & Summary_Table_Row).Interior.ColorIndex = 4
+                ElseIf Yearly_Change < 0 Then
+                    ws.Range("J" & Summary_Table_Row).Interior.ColorIndex = 3
+                End If
+                                
+                ' Calculate Percent Change
+                If BOY_Open = 0 Then
+                    If EOY_Close = 0 Then
+                        Percent_Change = 0
+                    Else
+                        Percent_Change = 9999999999#
+                    End If
+                Else
+                    Percent_Change = (EOY_Close / BOY_Open) - 1
+                End If
+                
+                ' Print Percent Change
+                ws.Range("K" & Summary_Table_Row).Value = Percent_Change
+                                                
+                ' Convert Number Format to Percent
+                ws.Range("K" & Summary_Table_Row).NumberFormat = "0.00%"
+                
+                ' Add one to the summary table row
+                Summary_Table_Row = Summary_Table_Row + 1
+                     
+                ' Reset the Total Volume
+                Total_Volume = 0
+                
+            ' If the cell immediately following a row is the same brand...
+            Else
+
+                ' Add to the Brand Total
+                Total_Volume = Total_Volume + ws.Cells(i, 7).Value
+                
+                ' Establish BOY_Open price
+                If ws.Cells(i - 1, 1).Value <> ws.Cells(i, 1).Value Then
+                    BOY_Open = ws.Cells(i, 3).Value
+                
+                End If
+                
+            End If
+
+        Next i
+        
+
+        ' define last row in summary table
+        LastRowSummary = ws.Cells(Rows.Count, "I").End(xlUp).Row
+        
+
+        
+        ' Keep track of the Row for Caculating the Greatest Table
+        Dim Greatest_Table_Row As Integer
+        Greatest_Table_Row = 2
+        
+    ' --------------------------------------------
+    ' SECOND LOOP
+    ' --------------------------------------------
+        ' Loop through all rows of summary table
+        For Greatest_Table_Row = 2 To LastRowSummary
+        
+            ' Keep Track of Greatest Percent Increase
+            If ws.Range("K" & Greatest_Table_Row - 1).Value = "Yearly Change" Then
+                Percent_Increase_Ticker = ws.Range("I" & Greatest_Table_Row).Value
+                Percent_Increase_Greatest = ws.Range("K" & Greatest_Table_Row).Value
+            ElseIf ws.Range("K" & Greatest_Table_Row).Value > Percent_Increase_Greatest Then
+                Percent_Increase_Ticker = ws.Range("I" & Greatest_Table_Row).Value
+                Percent_Increase_Greatest = ws.Range("K" & Greatest_Table_Row).Value
+            End If
+                    
+            ' Keep Track of Greatest Percent Decrease
+            If ws.Range("K" & Greatest_Table_Row - 1).Value = "Yearly Change" Then
+                Percent_Decrease_Ticker = ws.Range("I" & Greatest_Table_Row).Value
+                Percent_Decrease_Greatest = ws.Range("K" & Greatest_Table_Row).Value
+            ElseIf ws.Range("K" & Greatest_Table_Row).Value < Percent_Decrease_Greatest Then
+                Percent_Decrease_Ticker = ws.Range("I" & Greatest_Table_Row).Value
+                Percent_Decrease_Greatest = ws.Range("K" & Greatest_Table_Row).Value
+            End If
+                
+            ' Keep Track of Greatest Total Volume
+            If ws.Cells(Greatest_Table_Row - 1, 12).Value = "Total Stock Volume" Then
+                Volume_Ticker = ws.Cells(Greatest_Table_Row, 9).Value
+                Volume_Greatest = ws.Cells(Greatest_Table_Row, 12).Value
+            ElseIf ws.Cells(Greatest_Table_Row, 12).Value > Volume_Greatest Then
+                Volume_Ticker = ws.Cells(Greatest_Table_Row, 9).Value
+                Volume_Greatest = ws.Cells(Greatest_Table_Row, 12).Value
+            End If
+                                
+        Next Greatest_Table_Row
+                        
+        ' Add headers and row titles to summary section
+        ws.Range("O1").Value = "Measurement"
+        ws.Range("P1").Value = "Ticker"
+        ws.Range("Q1").Value = "Value"
+        ws.Range("O2").Value = "Greatest % Increase"
+        ws.Range("O3").Value = "Greatest % Decrease"
+        ws.Range("O4").Value = "Greatest Total Volume"
+        
+        ' Add values to maximum summary
+        ws.Range("P2").Value = Percent_Increase_Ticker
+        ws.Range("P3").Value = Percent_Decrease_Ticker
+        ws.Range("P4").Value = Volume_Ticker
+        ws.Range("Q2").Value = Percent_Increase_Greatest
+        ws.Range("Q3").Value = Percent_Decrease_Greatest
+        ws.Range("Q4").Value = Volume_Greatest
+        
+        ' Convert Number Format to Percent
+        ws.Range("Q2").NumberFormat = "0.00%"
+        ws.Range("Q3").NumberFormat = "0.00%"
+        
+        ' Reset Greatest Values to 0
+        Percent_Increase_Greatest = 0
+        Percent_Decrease_Greatest = 0
+        Volume_Greatest = 0
+        Greatest_Table_Row = 2
+        
+        ' Autofit Columns
+        ws.Columns("I:L").AutoFit
+        ws.Columns("O:Q").AutoFit
+                        
+    Next ws
+
+End Sub
+
+
+
